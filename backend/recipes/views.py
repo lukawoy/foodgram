@@ -9,12 +9,13 @@ from rest_framework.views import APIView
 from http import HTTPStatus
 from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
 from django_filters.rest_framework import DjangoFilterBackend
-from .filters import RecipeFilter
+from .filters import RecipeFilter, IngredientFilter
 from rest_framework.decorators import action
 import csv
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from .permissions import AuthorPermission
+
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
@@ -22,13 +23,15 @@ class TagViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = (AllowAny, )
     pagination_class = None
 
+
 class IngredientViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Ingredient.objects.all()
     serializer_class = IngredientSerializer
     permission_classes = (AllowAny, )
     pagination_class = None
-    filter_backends = (filters.SearchFilter, )
-    search_fields = ('^name', )
+    filter_backends = (DjangoFilterBackend, )
+    filterset_class = IngredientFilter
+
 
 class RecipeViewSet(viewsets.ModelViewSet):
     queryset = Recipe.objects.all().order_by('-pub_date')
@@ -37,12 +40,11 @@ class RecipeViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend, )
     filterset_class = RecipeFilter
 
-
     @action(detail=True, methods=['GET'], url_path='get-link')
     def get_link(self, request, pk=None):
         short = get_object_or_404(Recipe, id=pk).short_url
-        return Response({'short-link': f'https://foodgram.example.org/s/{short}'})  # Домен!!!
-
+        # Домен!!!
+        return Response({'short-link': f'https://foodgram.example.org/s/{short}'})
 
 
 class FavoriteViewSet(APIView):
@@ -54,11 +56,14 @@ class FavoriteViewSet(APIView):
             data={'id': id}, context={'request': request, 'id': id})
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data, status=HTTPStatus.OK)
+        return Response(serializer.data, status=HTTPStatus.CREATED)
 
     def delete(self, request, id):
-        Favourites.objects.get(user=self.request.user, recipe=Recipe.objects.get(
-            id=id)).delete()
+        if not Favourites.objects.filter(user=self.request.user,
+                          recipe=get_object_or_404(Recipe, id=id)).exists():
+            return Response(status=HTTPStatus.BAD_REQUEST)
+        get_object_or_404(Favourites, user=self.request.user,
+                          recipe=get_object_or_404(Recipe, id=id)).delete()
         return Response(status=HTTPStatus.NO_CONTENT)
 
 # ПОВТОРЕНИЕ КОДА-----------------------------------------------------
@@ -73,13 +78,18 @@ class ShoppingListViewSet(APIView):
             data={'id': id}, context={'request': request, 'id': id})
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data, status=HTTPStatus.OK)
+        return Response(serializer.data, status=HTTPStatus.CREATED)
 
     def delete(self, request, id):
-        ShoppingList.objects.get(user=self.request.user, recipe=Recipe.objects.get(
-            id=id)).delete()
-        return Response(status=HTTPStatus.NO_CONTENT)
+        user = self.request.user
+        recipe = get_object_or_404(Recipe, id=id)
+        if ShoppingList.objects.filter(user=user, recipe=recipe).exists():
+            ShoppingList.objects.get(user=user, recipe=recipe).delete()
+            return Response(status=HTTPStatus.NO_CONTENT)
+        return Response({'errors': 'Такого рецепта нет в списке покупок.'}, status=HTTPStatus.BAD_REQUEST)
 
+
+class DownloadShoppingListViewSet(APIView):
     def get(self, request):
         shopping_cart = {}
 
@@ -95,7 +105,7 @@ class ShoppingListViewSet(APIView):
 
         response = HttpResponse(
             content_type="text/csv",
-            headers={"Content-Disposition": 'attachment; filename="Shopping_cart.csv"'},)
+            headers={"Content-Disposition": 'attachment; filename="Shopping_cart.csv"'})
 
         writer = csv.writer(response)
         for item in shopping_cart.keys():
@@ -110,5 +120,5 @@ class GetRecipeShortLink(APIView):
 
     def get(self, request, short_url):
         recipe = get_object_or_404(Recipe, short_url=short_url)
-        serializer = RecipeSerializer(recipe, context={'request': request})       
+        serializer = RecipeSerializer(recipe, context={'request': request})
         return Response(serializer.data)

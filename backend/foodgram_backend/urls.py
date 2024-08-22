@@ -17,8 +17,7 @@ from users.views import UserAvatarViewSet, FollowViewSet, SubscribeViewSet, User
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('redoc/', TemplateView.as_view(template_name='redoc.html'),
-         name='redoc'
+    path('redoc/', TemplateView.as_view(template_name='redoc.html'), name='redoc'
          ),
     # path('api/recipes/shopping_cart/', ShoppingListViewSet.as_view()),
     # path('api/recipes/<int:id>/shopping_cart/', ShoppingListViewSet.as_view()),

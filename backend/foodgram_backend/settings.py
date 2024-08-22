@@ -22,7 +22,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    'corsheaders', # УБРАТЬ!
+    # 'corsheaders', # УБРАТЬ!
     'rest_framework.authtoken',
     'django_filters',
     'djoser',
@@ -33,7 +33,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    'corsheaders.middleware.CorsMiddleware', # УБРАТЬ
+    # 'corsheaders.middleware.CorsMiddleware', # УБРАТЬ
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -43,17 +43,18 @@ MIDDLEWARE = [
 
 # УБРАТЬ
 # CORS_ORIGIN_ALLOW_ALL = True
-CORS_URLS_REGEX = r'^/api/.*$' 
-CORS_ALLOWED_ORIGINS = [
-    'http://localhost:3000',
-] 
+# CORS_URLS_REGEX = r'^/api/.*$' 
+# CORS_ALLOWED_ORIGINS = [
+#     'http://localhost:3000',
+# ] 
 
 ROOT_URLCONF = 'foodgram_backend.urls'
 
+TEMPLATES_DIR = BASE_DIR / 'templates'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [TEMPLATES_DIR],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -118,6 +119,8 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+# STATICFILES_DIRS = ((BASE_DIR / 'static/'),)
+
 STATIC_ROOT = BASE_DIR / 'backend_static/static/'
 
 MEDIA_URL = '/media/'
@@ -149,7 +152,8 @@ REST_FRAMEWORK = {
         'user': '1000/day',
         'anon': '100/day',
     },
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'DEFAULT_PAGINATION_CLASS': 'users.pagination.CustomPagination',
     'PAGE_SIZE': 10,
 }
 

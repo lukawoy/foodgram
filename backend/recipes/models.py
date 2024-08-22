@@ -3,7 +3,7 @@ from django.core.validators import MinValueValidator
 # from ingredients.models import Ingredient
 from django.contrib.auth import get_user_model
 import random
-
+from django.db.models import Deferrable, UniqueConstraint
 User = get_user_model()
 
 MINIMUM_COOKING_TIME_IN_MIN = 1
@@ -21,8 +21,6 @@ class Tag(models.Model):
 
     def __str__(self):
         return self.name
-    
-
 
 
 class Ingredient(models.Model):
@@ -87,7 +85,8 @@ class Recipe(models.Model):
 
 class TagsReciep(models.Model):
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE, verbose_name='Тег')
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, verbose_name='Рецепт')
+    recipe = models.ForeignKey(
+        Recipe, on_delete=models.CASCADE, verbose_name='Рецепт')
 
     class Meta:
         verbose_name = 'связь тег-рецепт'
@@ -100,12 +99,17 @@ class TagsReciep(models.Model):
 class IngredientsRecipe(models.Model):
     ingredient = models.ForeignKey(
         Ingredient, on_delete=models.CASCADE, related_name='amount_ingredient', verbose_name='Ингредиент')
-    recipe = models.ForeignKey(Recipe, on_delete=models.CASCADE, verbose_name='Рецепт')
+    recipe = models.ForeignKey(
+        Recipe, on_delete=models.CASCADE, verbose_name='Рецепт')
     amount = models.IntegerField('Количество ингредиента')
 
     class Meta:
         verbose_name = 'связь ингредиент-рецепт'
         verbose_name_plural = 'Связь ингредиент-рецепт'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['ingredient', 'recipe'], name='unique pair ingredient-recipe')
+        ]
 
     def __str__(self):
         return f'Ингредиент "{self.ingredient}" - рецепт "{self.recipe}"'
@@ -125,11 +129,11 @@ class Favourites(models.Model):
         return f'Рецепт "{self.recipe.name}" в избранном у пользователя {self.user.username}'
 
 
-class ShoppingList(Favourites):
-    # user = models.ForeignKey(
-    #     User, on_delete=models.CASCADE, verbose_name='Пользователь')
-    # recipe = models.ForeignKey(
-    #     Recipe, on_delete=models.CASCADE)
+class ShoppingList(models.Model):
+    user = models.ForeignKey(
+        User, on_delete=models.CASCADE, verbose_name='Пользователь')
+    recipe = models.ForeignKey(
+        Recipe, on_delete=models.CASCADE)
 
     class Meta:
         verbose_name = 'список покупок'

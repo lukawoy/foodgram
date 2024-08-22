@@ -3,7 +3,7 @@ from django.urls import include, path
 from django.views.generic import TemplateView
 from rest_framework import routers
 
-from .views import TagViewSet, RecipeViewSet, FavoriteViewSet, ShoppingListViewSet, GetRecipeShortLink, IngredientViewSet
+from .views import TagViewSet, RecipeViewSet, FavoriteViewSet, ShoppingListViewSet, GetRecipeShortLink, IngredientViewSet, DownloadShoppingListViewSet
 
 router = routers.DefaultRouter()
 router.register(r'tags', TagViewSet)
@@ -12,6 +12,7 @@ router.register(r'recipes', RecipeViewSet)
 
 urlpatterns = [
     path('recipes/shopping_cart/', ShoppingListViewSet.as_view()),
+    path('recipes/download_shopping_cart/', DownloadShoppingListViewSet.as_view()),
     path('recipes/<int:id>/shopping_cart/', ShoppingListViewSet.as_view()),
     path('recipes/<int:id>/favorite/', FavoriteViewSet.as_view()),
     path('', include(router.urls)),

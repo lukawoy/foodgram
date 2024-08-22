@@ -3,7 +3,8 @@ from rest_framework import viewsets, mixins, permissions, filters
 from .serializers import UserSerializer, AvatarSerializer, FollowSerializer
 from django.contrib.auth import get_user_model
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.pagination import LimitOffsetPagination
+from rest_framework.pagination import LimitOffsetPagination, PageNumberPagination
+from .pagination import CustomPagination
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -32,19 +33,16 @@ class UserAvatarViewSet(APIView):
         return Response({'avatar': response})
 
     def delete(self, request):
-        User.objects.filter(username=self.request.user).update(avatar=None)
+        User.objects.filter(username=request.user).update(avatar=None)
         return Response(status=HTTPStatus.NO_CONTENT)
 
 
-class CreateListDestroyViewSet(mixins.CreateModelMixin,
-                               mixins.ListModelMixin,
-                               viewsets.GenericViewSet):
-    pass
 
 
 class FollowViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = FollowSerializer
     permission_classes = (permissions.IsAuthenticated, )
+    pagination_class = CustomPagination
     filter_backends = (filters.SearchFilter, )
     search_fields = ('=following__username', )
     lookup_value_regex = ''
@@ -54,6 +52,9 @@ class FollowViewSet(viewsets.ReadOnlyModelViewSet):
 
         for item in Follow.objects.filter(user_id=self.request.user.id):
             follows_list.append(User.objects.filter(id=item.following_id))
+        
+        if not follows_list:
+            return Follow.objects.none()
         follows_qs = follows_list[0].union(*follows_list[1:])
 
         return follows_qs
@@ -71,7 +72,7 @@ class SubscribeViewSet(APIView):
         serializer = FollowSerializer(follow, context={'request': request})
         Follow.objects.create(following_id=id, user_id=request.user.id)
 
-        return Response(serializer.data, status=HTTPStatus.OK)
+        return Response(serializer.data, status=HTTPStatus.CREATED)
 
     def delete(self, request, id):
         get_object_or_404(User, id=id)
