@@ -1,12 +1,12 @@
-from rest_framework import serializers, validators
-from django.contrib.auth import get_user_model
-from .models import Follow
 import base64
-from django.shortcuts import get_object_or_404
+
+from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
-from rest_framework.relations import SlugRelatedField
-from .validators import FollowSelfSubscriptionValidator
+from django.shortcuts import get_object_or_404
 from recipes.models import Recipe
+from rest_framework import serializers
+
+from .models import Follow
 
 User = get_user_model()
 
@@ -31,44 +31,30 @@ class AvatarSerializer(serializers.ModelSerializer):
     def update(self, instance, validated_data):
         instance.avatar = validated_data.get('avatar', instance.avatar)
         instance.save()
-        # obj = User.objects.filter(username=self.context.get('user')).update(avatar=validated_data['avatar'])
-
         return instance
 
 
 class UserSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
-    avatar = Base64ImageField(required=False, allow_null=True)
+    avatar = Base64ImageField()
 
     class Meta():
         model = User
         fields = (
-            'email',
             'id',
             'username',
             'first_name',
             'last_name',
+            'email',
             'is_subscribed',
             'avatar',
         )
-
 
     def get_is_subscribed(self, obj) -> bool:
         return Follow.objects.filter(
             user=obj.id,
             following=self.context.get('request').user.id).exists()
 
-    # def validate(self, data):
-    #     request = self.context['request']
-    #     print(request)
-    #     recipe = get_object_or_404(User, username=request.user.username)
-        # if Favourites.objects.filter(user=request.user, recipe=recipe).exists():
-        #     raise serializers.ValidationError(
-        #         f'Данный рецепт уже добавлен в избранное!'
-        #     )
-        return data
-
-        # return super().validate(attrs)
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -80,10 +66,10 @@ class UserCreateSerializer(serializers.ModelSerializer):
             'username',
             'first_name',
             'last_name',
-            'password'
+            'password',
         )
         extra_kwargs = {"password": {"write_only": True}}
-    
+
     def create(self, validated_data):
         user = User(
             email=validated_data['email'],
@@ -97,15 +83,15 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
 
 class ShortRecipeSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = Recipe
         fields = ('id', 'name', 'image', 'cooking_time')
 
 
 class FollowSerializer(UserSerializer):
-    recipes = ShortRecipeSerializer(many=True, read_only=True)
+    recipes = serializers.SerializerMethodField()
     recipes_count = serializers.SerializerMethodField()
+    avatar = Base64ImageField(read_only=True)
 
     class Meta(UserSerializer.Meta):
         fields = (
@@ -119,17 +105,48 @@ class FollowSerializer(UserSerializer):
             'recipes_count',
             'avatar',
         )
+        read_only_fields = (
+            'email',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'is_subscribed',
+            'recipes',
+            'recipes_count',
+        )
 
     def get_recipes_count(self, obj) -> int:
         return Recipe.objects.filter(author=obj).count()
-    
 
-    # def create(self, validated_data):
-    #     print(self.context)
-    #     # following_id
-    #     # user_id = self.context.
+    def get_recipes(self, obj):
+        user = self.context['request'].user
+        recipes = Recipe.objects.filter(author=user)
+        serialize_recipes = []
+        for recipe in recipes:
+            serializer = ShortRecipeSerializer(recipe)
+            serialize_recipes.append(serializer.data)
 
-    #     following = Follow.objects.create(following_id=id, user_id=request.user.id)
-    #     return following
+        recipes_limit = self.context['request'].GET.get('recipes_limit')
+        if recipes_limit:
+            if not recipes_limit.isdigit():
+                raise serializers.ValidationError(
+                    'Параметр recipes_limit должен быть целым положительным числом.')
+            return serialize_recipes[0:int(recipes_limit)]
 
-    
+        return serialize_recipes
+
+    def create(self, validated_data):
+        Follow.objects.create(following_id=validated_data.get(
+            'following_id'), user_id=validated_data.get('user_id'))
+        return User.objects.get(id=validated_data.get('user_id'))
+
+    def validate(self, data):
+        user_id = self.context.get('request').user.id
+        following_id = int(self.context['view'].kwargs.get('user_id'))
+        get_object_or_404(User, id=following_id)
+        print(user_id, following_id)
+        if Follow.objects.filter(following_id=following_id, user_id=user_id).exists() or (user_id == following_id):
+            raise serializers.ValidationError(
+                'Подписка уже существует или невозможна.')
+        return {'following_id': following_id, 'user_id': user_id}

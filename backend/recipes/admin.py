@@ -1,10 +1,27 @@
 from django.contrib import admin
 
-from .models import Tag, Recipe, Favourites, ShoppingList, TagsReciep, IngredientsRecipe, Ingredient
+from .models import (
+    Tag, Recipe, Favourites, ShoppingList,
+    TagsReciep, IngredientsRecipe, Ingredient
+)
+
+
+class TagInline(admin.TabularInline):
+    model = TagsReciep
+    extra = 2
+
+
+class IngredientInline(admin.TabularInline):
+    model = IngredientsRecipe
+    extra = 3
 
 
 class RecipeAdmin(admin.ModelAdmin):
-    readonly_fields = ['short_url', 'count_favorite']
+    inlines = (
+        TagInline, IngredientInline
+    )
+
+    readonly_fields = ['short_url', 'count_favorite', 'pub_date']
     list_display = ('name', 'author')
     list_filter = ('tags', )
     empty_value_display = 'Не заполнено'
@@ -20,10 +37,20 @@ class IngredientAdmin(admin.ModelAdmin):
     search_fields = ['name']
 
 
-admin.site.register(Tag)
+class TagAdmin(admin.ModelAdmin):
+    list_display = ('name', 'slug')
+    search_fields = ['name', 'slug']
+
+
+class FavouritesAdmin(admin.ModelAdmin):
+    list_display = ('recipe', 'user')
+    search_fields = ['recipe__name', 'user__username']
+
+
+admin.site.register(Tag, TagAdmin)
 admin.site.register(Ingredient, IngredientAdmin)
 admin.site.register(Recipe, RecipeAdmin)
-admin.site.register(Favourites)
-admin.site.register(ShoppingList)
-admin.site.register(TagsReciep)
-admin.site.register(IngredientsRecipe)
+admin.site.register(Favourites, FavouritesAdmin)
+admin.site.register(ShoppingList, FavouritesAdmin)
+# admin.site.register(TagsReciep)
+# admin.site.register(IngredientsRecipe)

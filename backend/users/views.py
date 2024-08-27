@@ -1,42 +1,22 @@
-from django.shortcuts import render
-from rest_framework import viewsets, mixins, permissions, filters
-from .serializers import UserSerializer, AvatarSerializer, FollowSerializer
-from django.contrib.auth import get_user_model
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.pagination import LimitOffsetPagination, PageNumberPagination
-from .pagination import CustomPagination
-from rest_framework.decorators import action
-from rest_framework.response import Response
-from rest_framework.views import APIView
+import os
 from http import HTTPStatus
+
+from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404, render
+from djoser.views import UserViewSet
+from dotenv import load_dotenv
+from rest_framework import filters, permissions, viewsets
+from rest_framework.decorators import action
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.response import Response
+
 from .models import Follow
-from django.shortcuts import get_object_or_404
-from foodgram_backend.settings import BASE_DIR
+from .pagination import CustomPagination
+from .serializers import AvatarSerializer, FollowSerializer, UserSerializer
+
+load_dotenv(override=True)
 
 User = get_user_model()
-
-
-class UserAvatarViewSet(APIView):
-    serializer_class = AvatarSerializer
-    permission_classes = (IsAuthenticated, )
-
-    def put(self, request):
-        user = request.user
-        serializer = self.serializer_class(user,
-                                           data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        response = '"http://foodgram.example.org' + \
-            serializer.data.get('avatar')                   # ОТВЕТ
-
-        return Response({'avatar': response})
-
-    def delete(self, request):
-        User.objects.filter(username=request.user).update(avatar=None)
-        return Response(status=HTTPStatus.NO_CONTENT)
-
-
 
 
 class FollowViewSet(viewsets.ReadOnlyModelViewSet):
@@ -52,7 +32,7 @@ class FollowViewSet(viewsets.ReadOnlyModelViewSet):
 
         for item in Follow.objects.filter(user_id=self.request.user.id):
             follows_list.append(User.objects.filter(id=item.following_id))
-        
+
         if not follows_list:
             return Follow.objects.none()
         follows_qs = follows_list[0].union(*follows_list[1:])
@@ -60,33 +40,41 @@ class FollowViewSet(viewsets.ReadOnlyModelViewSet):
         return follows_qs
 
 
-class SubscribeViewSet(APIView):
+class SubscribeViewSet(viewsets.ModelViewSet):
     serializer_class = FollowSerializer
     permission_classes = (IsAuthenticated, )
+    http_method_names = ['post', 'delete']
 
-    def post(self, request, id):
-        follow = get_object_or_404(User, id=id)
-        if Follow.objects.filter(following_id=id, user_id=request.user.id).exists() or (request.user.id == id):
-            return Response({'errors': 'Подписка уже существует или невозможна.'}, status=HTTPStatus.BAD_REQUEST)
-
-        serializer = FollowSerializer(follow, context={'request': request})
-        Follow.objects.create(following_id=id, user_id=request.user.id)
-
-        return Response(serializer.data, status=HTTPStatus.CREATED)
-
-    def delete(self, request, id):
-        get_object_or_404(User, id=id)
-        if Follow.objects.filter(following_id=id, user_id=request.user.id).exists():
+    def delete(self, request, user_id):
+        get_object_or_404(User, id=user_id)
+        if Follow.objects.filter(following_id=user_id, user_id=request.user.id).exists():
             Follow.objects.get(
-                following_id=id, user_id=request.user.id).delete()
+                following_id=user_id, user_id=request.user.id).delete()
             return Response(status=HTTPStatus.NO_CONTENT)
         return Response({'errors': 'Вы уже не подписаны.'}, status=HTTPStatus.BAD_REQUEST)
 
 
-class UsersMeViewSet(viewsets.ReadOnlyModelViewSet):
+class UsersMeViewSet(UserViewSet):
+    queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (permissions.IsAuthenticated, )
-    pagination_class = None
+    permission_classes = (AllowAny, )
 
-    def get_queryset(self):
-        return User.objects.filter(id=self.request.user.id)
+    @action(detail=False, methods=['put', 'delete'],
+            serializer_class=AvatarSerializer, permission_classes=(IsAuthenticated, ), url_path='me/avatar')
+    def avatar(self, request):
+        if request.method == 'PUT':
+            serializer = self.serializer_class(request.user,
+                                               data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            response = f'https://{os.getenv("DOMAIN")}{serializer.data.get("avatar")}'
+            return Response({'avatar': response})
+
+        User.objects.filter(username=request.user).update(avatar=None)
+        return Response(status=HTTPStatus.NO_CONTENT)
+
+    @action(["get"], detail=False, permission_classes=(IsAuthenticated, ))
+    def me(self, request, *args, **kwargs):
+        serializer = self.serializer_class(
+            request.user, context={'request': request})
+        return Response(serializer.data)

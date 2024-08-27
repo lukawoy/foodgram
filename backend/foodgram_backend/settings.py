@@ -1,14 +1,18 @@
 import os
 from pathlib import Path
-from datetime import timedelta
+
+from dotenv import load_dotenv
+
+load_dotenv(override=True)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-0l3&_h%(52ftep(k5wfxm6z#_m=6@1^v#pqs(*d+idiri7hn(b'
+SECRET_KEY = os.getenv('SECRET_KEY', 'DEFAULT_SECRET_KEY')
 
-DEBUG = True
+DEBUG = os.getenv('MODE_DEBAG') == 'True'
 
-ALLOWED_HOSTS = []
+# [os.getenv('SERVER_IP', '123.123.123.123'), os.getenv('DOMAIN')]
+ALLOWED_HOSTS = ['localhost', '127.0.0.1']
 
 AUTH_USER_MODEL = 'users.User'
 
@@ -22,7 +26,6 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
-    # 'corsheaders', # УБРАТЬ!
     'rest_framework.authtoken',
     'django_filters',
     'djoser',
@@ -33,7 +36,6 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    # 'corsheaders.middleware.CorsMiddleware', # УБРАТЬ
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -41,16 +43,11 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
-# УБРАТЬ
-# CORS_ORIGIN_ALLOW_ALL = True
-# CORS_URLS_REGEX = r'^/api/.*$' 
-# CORS_ALLOWED_ORIGINS = [
-#     'http://localhost:3000',
-# ] 
 
 ROOT_URLCONF = 'foodgram_backend.urls'
 
 TEMPLATES_DIR = BASE_DIR / 'templates'
+
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -75,10 +72,20 @@ WSGI_APPLICATION = 'foodgram_backend.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': os.getenv('POSTGRES_DB', 'django'),
+        'USER': os.getenv('POSTGRES_USER', 'django'),
+        'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
+        'HOST': os.getenv('DB_HOST', ''),
+        'PORT': os.getenv('DB_PORT', 5432)
     }
 }
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 
 # Password validation
@@ -121,7 +128,7 @@ STATIC_URL = '/static/'
 
 # STATICFILES_DIRS = ((BASE_DIR / 'static/'),)
 
-STATIC_ROOT = BASE_DIR / 'backend_static/static/'
+# STATIC_ROOT = BASE_DIR / 'backend_static/static/'
 
 MEDIA_URL = '/media/'
 
@@ -133,11 +140,6 @@ MEDIA_ROOT = BASE_DIR / 'media'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
-    # 'DEFAULT_RENDERER_CLASSES': (
-    #     'rest_framework.renderers.BrowsableAPIRenderer',
-    #     'rest_framework.renderers.JSONRenderer',
-    #     'rest_framework.renderers.TemplateHTMLRenderer',
-    # ),
     'DEFAULT_PERMISSION_CLASSES': [
         'rest_framework.permissions.IsAuthenticated',
     ],
@@ -152,9 +154,8 @@ REST_FRAMEWORK = {
         'user': '1000/day',
         'anon': '100/day',
     },
-    # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'DEFAULT_PAGINATION_CLASS': 'users.pagination.CustomPagination',
-    'PAGE_SIZE': 10,
+    'PAGE_SIZE': 6,
 }
 
 DJOSER = {
@@ -169,3 +170,8 @@ DJOSER = {
         'user': ['rest_framework.permissions.AllowAny'],
     }
 }
+
+
+MINIMUM_COOKING_TIME_IN_MIN = 1
+CHARACTERS = 'ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz234567890'
+TOKEN_LENGTH = 3

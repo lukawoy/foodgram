@@ -1,20 +1,26 @@
-from django.shortcuts import render
-from rest_framework import viewsets, filters
-from .models import Tag, Recipe, Favourites, ShoppingList, IngredientsRecipe, Ingredient
-from .serializers import TagSerializer, RecipeSerializer, FavoriteSerializer, ShoppingListSerializer, IngredientSerializer
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.decorators import api_view, action
-from rest_framework.views import APIView
-from http import HTTPStatus
-from rest_framework.permissions import IsAuthenticated, AllowAny, IsAuthenticatedOrReadOnly
-from django_filters.rest_framework import DjangoFilterBackend
-from .filters import RecipeFilter, IngredientFilter
-from rest_framework.decorators import action
 import csv
+import os
+from http import HTTPStatus
+
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, render
+from django_filters.rest_framework import DjangoFilterBackend
+from dotenv import load_dotenv
+from rest_framework import viewsets
+from rest_framework.decorators import action, api_view
+from rest_framework.permissions import (AllowAny, IsAuthenticated)
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .filters import IngredientFilter, RecipeFilter
+from .models import (Favourites, Ingredient, IngredientsRecipe, Recipe,
+                     ShoppingList, Tag)
 from .permissions import AuthorPermission
+from .serializers import (FavoriteSerializer, IngredientSerializer,
+                          RecipeSerializer, ShoppingListSerializer,
+                          TagSerializer)
+
+load_dotenv(override=True)
 
 
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
@@ -43,46 +49,33 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['GET'], url_path='get-link')
     def get_link(self, request, pk=None):
         short = get_object_or_404(Recipe, id=pk).short_url
-        # Домен!!!
-        return Response({'short-link': f'https://foodgram.example.org/s/{short}'})
+        return Response({'short-link': f'https://{os.getenv("DOMAIN")}/s/{short}'})
 
 
-class FavoriteViewSet(APIView):
+class FavoriteViewSet(viewsets.ModelViewSet):
     serializer_class = FavoriteSerializer
     permission_classes = (IsAuthenticated, )
+    http_method_names = ['delete', 'post']
 
-    def post(self, request, id):
-        serializer = self.serializer_class(
-            data={'id': id}, context={'request': request, 'id': id})
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=HTTPStatus.CREATED)
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user, recipe=get_object_or_404(
+            Recipe, id=self.kwargs.get('recipe_id')))
 
-    def delete(self, request, id):
+    def delete(self, request, recipe_id):
         if not Favourites.objects.filter(user=self.request.user,
-                          recipe=get_object_or_404(Recipe, id=id)).exists():
+                                         recipe=get_object_or_404(Recipe, id=recipe_id)).exists():
             return Response(status=HTTPStatus.BAD_REQUEST)
         get_object_or_404(Favourites, user=self.request.user,
-                          recipe=get_object_or_404(Recipe, id=id)).delete()
+                          recipe=get_object_or_404(Recipe, id=recipe_id)).delete()
         return Response(status=HTTPStatus.NO_CONTENT)
 
-# ПОВТОРЕНИЕ КОДА-----------------------------------------------------
 
-
-class ShoppingListViewSet(APIView):
-    # queryset = ShoppingList.objects.all()
+class ShoppingListViewSet(FavoriteViewSet):
     serializer_class = ShoppingListSerializer
 
-    def post(self, request, id):
-        serializer = self.serializer_class(
-            data={'id': id}, context={'request': request, 'id': id})
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response(serializer.data, status=HTTPStatus.CREATED)
-
-    def delete(self, request, id):
+    def delete(self, request, recipe_id):
         user = self.request.user
-        recipe = get_object_or_404(Recipe, id=id)
+        recipe = get_object_or_404(Recipe, id=recipe_id)
         if ShoppingList.objects.filter(user=user, recipe=recipe).exists():
             ShoppingList.objects.get(user=user, recipe=recipe).delete()
             return Response(status=HTTPStatus.NO_CONTENT)
@@ -105,9 +98,12 @@ class DownloadShoppingListViewSet(APIView):
 
         response = HttpResponse(
             content_type="text/csv",
-            headers={"Content-Disposition": 'attachment; filename="Shopping_cart.csv"'})
+            headers={
+                "Content-Disposition": 'attachment; filename="Shopping_cart.csv"'},
+            charset='cp1251')
 
         writer = csv.writer(response)
+        writer.writerow(['Список покупок:'])
         for item in shopping_cart.keys():
             writer.writerow([f'{str(item)} - {str(shopping_cart[item])}'])
 
@@ -117,6 +113,7 @@ class DownloadShoppingListViewSet(APIView):
 class GetRecipeShortLink(APIView):
     serializer_class = RecipeSerializer
     queryset = Recipe.objects.all()
+    permission_classes = (AllowAny,)
 
     def get(self, request, short_url):
         recipe = get_object_or_404(Recipe, short_url=short_url)
