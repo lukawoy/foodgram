@@ -56,7 +56,6 @@ class UserSerializer(serializers.ModelSerializer):
             following=self.context.get('request').user.id).exists()
 
 
-
 class UserCreateSerializer(serializers.ModelSerializer):
     class Meta():
         model = User
@@ -131,7 +130,8 @@ class FollowSerializer(UserSerializer):
         if recipes_limit:
             if not recipes_limit.isdigit():
                 raise serializers.ValidationError(
-                    'Параметр recipes_limit должен быть целым положительным числом.')
+                    'Параметр recipes_limit должен быть '
+                    'целым положительным числом.')
             return serialize_recipes[0:int(recipes_limit)]
 
         return serialize_recipes
@@ -146,7 +146,9 @@ class FollowSerializer(UserSerializer):
         following_id = int(self.context['view'].kwargs.get('user_id'))
         get_object_or_404(User, id=following_id)
         print(user_id, following_id)
-        if Follow.objects.filter(following_id=following_id, user_id=user_id).exists() or (user_id == following_id):
+        if Follow.objects.filter(
+                following_id=following_id,
+                user_id=user_id).exists() or (user_id == following_id):
             raise serializers.ValidationError(
                 'Подписка уже существует или невозможна.')
         return {'following_id': following_id, 'user_id': user_id}

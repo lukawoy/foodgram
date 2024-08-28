@@ -13,7 +13,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         for model, csv_file in TABLES.items():
-            path_file = f'{Path(__file__).resolve().parent.parent.parent.parent.parent}/data/{csv_file}'
+            path_file = f'{Path(__file__).resolve().parent.parent.parent.parent}/data/{csv_file}'
             with open(path_file, mode='r', encoding='utf-8') as file:
                 reader = csv.DictReader(file)
                 model_objects = []

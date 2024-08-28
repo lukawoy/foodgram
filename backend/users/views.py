@@ -2,7 +2,7 @@ import os
 from http import HTTPStatus
 
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet
 from dotenv import load_dotenv
 from rest_framework import filters, permissions, viewsets
@@ -47,11 +47,15 @@ class SubscribeViewSet(viewsets.ModelViewSet):
 
     def delete(self, request, user_id):
         get_object_or_404(User, id=user_id)
-        if Follow.objects.filter(following_id=user_id, user_id=request.user.id).exists():
+        if Follow.objects.filter(
+                following_id=user_id,
+                user_id=request.user.id).exists():
             Follow.objects.get(
                 following_id=user_id, user_id=request.user.id).delete()
             return Response(status=HTTPStatus.NO_CONTENT)
-        return Response({'errors': 'Вы уже не подписаны.'}, status=HTTPStatus.BAD_REQUEST)
+        return Response(
+            {'errors': 'Вы уже не подписаны.'}, status=HTTPStatus.BAD_REQUEST
+        )
 
 
 class UsersMeViewSet(UserViewSet):
@@ -60,14 +64,17 @@ class UsersMeViewSet(UserViewSet):
     permission_classes = (AllowAny, )
 
     @action(detail=False, methods=['put', 'delete'],
-            serializer_class=AvatarSerializer, permission_classes=(IsAuthenticated, ), url_path='me/avatar')
+            serializer_class=AvatarSerializer,
+            permission_classes=(IsAuthenticated, ),
+            url_path='me/avatar')
     def avatar(self, request):
         if request.method == 'PUT':
             serializer = self.serializer_class(request.user,
                                                data=request.data)
             serializer.is_valid(raise_exception=True)
             serializer.save()
-            response = f'https://{os.getenv("DOMAIN")}{serializer.data.get("avatar")}'
+            response = f'https://{os.getenv("DOMAIN")}'
+            f'{serializer.data.get("avatar")}'
             return Response({'avatar': response})
 
         User.objects.filter(username=request.user).update(avatar=None)

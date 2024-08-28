@@ -3,11 +3,11 @@ import os
 from http import HTTPStatus
 
 from django.http import HttpResponse
-from django.shortcuts import get_object_or_404, render
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from dotenv import load_dotenv
 from rest_framework import viewsets
-from rest_framework.decorators import action, api_view
+from rest_framework.decorators import action
 from rest_framework.permissions import (AllowAny, IsAuthenticated)
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -49,7 +49,9 @@ class RecipeViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['GET'], url_path='get-link')
     def get_link(self, request, pk=None):
         short = get_object_or_404(Recipe, id=pk).short_url
-        return Response({'short-link': f'https://{os.getenv("DOMAIN")}/s/{short}'})
+        return Response(
+            {'short-link': f'https://{os.getenv("DOMAIN")}/s/{short}'}
+        )
 
 
 class FavoriteViewSet(viewsets.ModelViewSet):
@@ -63,10 +65,12 @@ class FavoriteViewSet(viewsets.ModelViewSet):
 
     def delete(self, request, recipe_id):
         if not Favourites.objects.filter(user=self.request.user,
-                                         recipe=get_object_or_404(Recipe, id=recipe_id)).exists():
+                                         recipe=get_object_or_404(
+                                             Recipe, id=recipe_id)).exists():
             return Response(status=HTTPStatus.BAD_REQUEST)
         get_object_or_404(Favourites, user=self.request.user,
-                          recipe=get_object_or_404(Recipe, id=recipe_id)).delete()
+                          recipe=get_object_or_404(Recipe,
+                                                   id=recipe_id)).delete()
         return Response(status=HTTPStatus.NO_CONTENT)
 
 
@@ -79,7 +83,10 @@ class ShoppingListViewSet(FavoriteViewSet):
         if ShoppingList.objects.filter(user=user, recipe=recipe).exists():
             ShoppingList.objects.get(user=user, recipe=recipe).delete()
             return Response(status=HTTPStatus.NO_CONTENT)
-        return Response({'errors': 'Такого рецепта нет в списке покупок.'}, status=HTTPStatus.BAD_REQUEST)
+        return Response(
+            {'errors': 'Такого рецепта нет в списке покупок.'},
+            status=HTTPStatus.BAD_REQUEST
+        )
 
 
 class DownloadShoppingListViewSet(APIView):
@@ -87,8 +94,11 @@ class DownloadShoppingListViewSet(APIView):
         shopping_cart = {}
 
         for recipe in ShoppingList.objects.filter(user=request.user):
-            for product in IngredientsRecipe.objects.filter(recipe_id=recipe.recipe_id):
-                ingredient = f'{product.ingredient.name} ({product.ingredient.measurement_unit})'
+            for product in IngredientsRecipe.objects.filter(
+                recipe_id=recipe.recipe_id
+            ):
+                ingredient = f'{product.ingredient.name} '
+                f'({product.ingredient.measurement_unit})'
                 amount = product.amount
 
                 if shopping_cart.get(ingredient):
@@ -99,7 +109,9 @@ class DownloadShoppingListViewSet(APIView):
         response = HttpResponse(
             content_type="text/csv",
             headers={
-                "Content-Disposition": 'attachment; filename="Shopping_cart.csv"'},
+                "Content-Disposition": 'attachment; '
+                'filename="Shopping_cart.csv"'
+            },
             charset='cp1251')
 
         writer = csv.writer(response)

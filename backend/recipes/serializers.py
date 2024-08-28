@@ -94,7 +94,12 @@ class RecipeSerializer(serializers.ModelSerializer):
 
         for ingredient in ingredients:
             IngredientsRecipe.objects.create(
-                ingredient=get_object_or_404(Ingredient, id=ingredient.get('id')), amount=ingredient.get('amount'), recipe=recipe)
+                ingredient=get_object_or_404(
+                    Ingredient,
+                    id=ingredient.get('id')),
+                amount=ingredient.get('amount'),
+                recipe=recipe
+            )
 
         return recipe
 
@@ -147,11 +152,13 @@ class RecipeSerializer(serializers.ModelSerializer):
         ingredients = self.initial_data.get('ingredients')
         if not ingredients:
             raise serializers.ValidationError(
-                'Поле ingredients является обязательным и не должно быть пустым.')
+                'Поле ingredients является обязательным '
+                'и не должно быть пустым.')
         ingredient_ips = [item['id'] for item in ingredients]
         if len(ingredients) != len(set(ingredient_ips)):
             raise serializers.ValidationError(
-                'В поле ingredients не должно быть повторяющихся ингредиентов.')
+                'В поле ingredients не должно быть '
+                'повторяющихся ингредиентов.')
         for ingredient in ingredients:
             if not ingredient.get('amount'):
                 raise serializers.ValidationError(
@@ -184,7 +191,9 @@ class FavoriteSerializer(serializers.ModelSerializer):
     def validate(self, data):
         recipe = get_object_or_404(
             Recipe, id=self.context['view'].kwargs.get('recipe_id'))
-        if Favourites.objects.filter(user=self.context.get('request').user, recipe=recipe).exists():
+        if Favourites.objects.filter(
+                user=self.context.get('request').user,
+                recipe=recipe).exists():
             raise serializers.ValidationError(
                 'Данный рецепт уже добавлен в избранное!')
         return data
@@ -197,7 +206,9 @@ class ShoppingListSerializer(FavoriteSerializer):
     def validate(self, data):
         recipe = get_object_or_404(
             Recipe, id=self.context['view'].kwargs.get('recipe_id'))
-        if ShoppingList.objects.filter(user=self.context.get('request').user, recipe=recipe).exists():
+        if ShoppingList.objects.filter(
+                user=self.context.get('request').user,
+                recipe=recipe).exists():
             raise serializers.ValidationError(
                 'Данный рецепт уже добавлен в список покупок!')
         return data

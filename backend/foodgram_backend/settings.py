@@ -11,8 +11,7 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'DEFAULT_SECRET_KEY')
 
 DEBUG = os.getenv('MODE_DEBAG') == 'True'
 
-# [os.getenv('SERVER_IP', '123.123.123.123'), os.getenv('DOMAIN')]
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+ALLOWED_HOSTS = [os.getenv('SERVER_IP', '123.123.123.123'), os.getenv('DOMAIN')]
 
 AUTH_USER_MODEL = 'users.User'
 
@@ -80,12 +79,6 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT', 5432)
     }
 }
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.sqlite3',
-#         'NAME': BASE_DIR / 'db.sqlite3',
-#     }
-# }
 
 
 # Password validation
@@ -126,9 +119,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-# STATICFILES_DIRS = ((BASE_DIR / 'static/'),)
-
-# STATIC_ROOT = BASE_DIR / 'backend_static/static/'
+STATIC_ROOT = BASE_DIR / 'backend_static/static/'
 
 MEDIA_URL = '/media/'
 
