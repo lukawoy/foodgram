@@ -3,11 +3,8 @@ import random
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.db import models
-from foodgram_backend.settings import (
-    CHARACTERS,
-    MINIMUM_COOKING_TIME_IN_MIN,
-    TOKEN_LENGTH
-)
+from foodgram_backend.settings import (CHARACTERS, MINIMUM_COOKING_TIME_IN_MIN,
+                                       TOKEN_LENGTH)
 
 User = get_user_model()
 
