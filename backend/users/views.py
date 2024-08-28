@@ -1,14 +1,16 @@
 import os
 from http import HTTPStatus
 
-from django.contrib.auth import get_user_model
-from django.shortcuts import get_object_or_404
-from djoser.views import UserViewSet
 from dotenv import load_dotenv
-from rest_framework import filters, permissions, viewsets
+
+from rest_framework import filters, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
+
+from django.contrib.auth import get_user_model
+from django.shortcuts import get_object_or_404
+from djoser.views import UserViewSet
 
 from .models import Follow
 from .pagination import CustomPagination
@@ -21,7 +23,7 @@ User = get_user_model()
 
 class FollowViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = FollowSerializer
-    permission_classes = (permissions.IsAuthenticated, )
+    permission_classes = (IsAuthenticated, )
     pagination_class = CustomPagination
     filter_backends = (filters.SearchFilter, )
     search_fields = ('=following__username', )
@@ -51,7 +53,8 @@ class SubscribeViewSet(viewsets.ModelViewSet):
                 following_id=user_id,
                 user_id=request.user.id).exists():
             Follow.objects.get(
-                following_id=user_id, user_id=request.user.id).delete()
+                following_id=user_id,
+                user_id=request.user.id).delete()
             return Response(status=HTTPStatus.NO_CONTENT)
         return Response(
             {'errors': 'Вы уже не подписаны.'}, status=HTTPStatus.BAD_REQUEST
@@ -73,8 +76,10 @@ class UsersMeViewSet(UserViewSet):
                                                data=request.data)
             serializer.is_valid(raise_exception=True)
             serializer.save()
-            response = f'https://{os.getenv("DOMAIN")}'
-            f'{serializer.data.get("avatar")}'
+            response = (
+                f'https://{os.getenv("DOMAIN")}'
+                f'{serializer.data.get("avatar")}'
+            )
             return Response({'avatar': response})
 
         User.objects.filter(username=request.user).update(avatar=None)

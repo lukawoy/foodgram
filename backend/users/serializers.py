@@ -1,12 +1,14 @@
 import base64
 
+from rest_framework import serializers
+
 from django.contrib.auth import get_user_model
 from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
-from recipes.models import Recipe
-from rest_framework import serializers
 
+from recipes.models import Recipe
 from .models import Follow
+
 
 User = get_user_model()
 
@@ -137,15 +139,16 @@ class FollowSerializer(UserSerializer):
         return serialize_recipes
 
     def create(self, validated_data):
-        Follow.objects.create(following_id=validated_data.get(
-            'following_id'), user_id=validated_data.get('user_id'))
+        Follow.objects.create(
+            following_id=validated_data.get('following_id'),
+            user_id=validated_data.get('user_id'))
         return User.objects.get(id=validated_data.get('user_id'))
 
     def validate(self, data):
         user_id = self.context.get('request').user.id
         following_id = int(self.context['view'].kwargs.get('user_id'))
         get_object_or_404(User, id=following_id)
-        print(user_id, following_id)
+
         if Follow.objects.filter(
                 following_id=following_id,
                 user_id=user_id).exists() or (user_id == following_id):

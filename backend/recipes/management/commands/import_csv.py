@@ -2,6 +2,7 @@ import csv
 from pathlib import Path
 
 from django.core.management import BaseCommand
+
 from recipes.models import Ingredient
 
 TABLES = {

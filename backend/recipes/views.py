@@ -2,23 +2,29 @@ import csv
 import os
 from http import HTTPStatus
 
-from django.http import HttpResponse
-from django.shortcuts import get_object_or_404
-from django_filters.rest_framework import DjangoFilterBackend
 from dotenv import load_dotenv
+
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from django.http import HttpResponse
+from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+
 from .filters import IngredientFilter, RecipeFilter
-from .models import (Favourites, Ingredient, IngredientsRecipe, Recipe,
-                     ShoppingList, Tag)
+from .models import (
+    Favourites, Ingredient, IngredientsRecipe, Recipe,
+    ShoppingList, Tag
+)
 from .permissions import AuthorPermission
-from .serializers import (FavoriteSerializer, IngredientSerializer,
-                          RecipeSerializer, ShoppingListSerializer,
-                          TagSerializer)
+from .serializers import (
+    FavoriteSerializer, IngredientSerializer,
+    RecipeSerializer, ShoppingListSerializer,
+    TagSerializer
+)
 
 load_dotenv(override=True)
 
@@ -60,17 +66,20 @@ class FavoriteViewSet(viewsets.ModelViewSet):
     http_method_names = ['delete', 'post']
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user, recipe=get_object_or_404(
-            Recipe, id=self.kwargs.get('recipe_id')))
+        serializer.save(user=self.request.user,
+                        recipe=get_object_or_404(
+                            Recipe, id=self.kwargs.get('recipe_id'))
+                        )
 
     def delete(self, request, recipe_id):
         if not Favourites.objects.filter(user=self.request.user,
                                          recipe=get_object_or_404(
                                              Recipe, id=recipe_id)).exists():
             return Response(status=HTTPStatus.BAD_REQUEST)
+
         get_object_or_404(Favourites, user=self.request.user,
-                          recipe=get_object_or_404(Recipe,
-                                                   id=recipe_id)).delete()
+                          recipe=get_object_or_404(
+                              Recipe, id=recipe_id)).delete()
         return Response(status=HTTPStatus.NO_CONTENT)
 
 
@@ -97,8 +106,10 @@ class DownloadShoppingListViewSet(APIView):
             for product in IngredientsRecipe.objects.filter(
                 recipe_id=recipe.recipe_id
             ):
-                ingredient = f'{product.ingredient.name} '
-                f'({product.ingredient.measurement_unit})'
+                ingredient = (
+                    f'{product.ingredient.name} '
+                    f'({product.ingredient.measurement_unit})'
+                )
                 amount = product.amount
 
                 if shopping_cart.get(ingredient):

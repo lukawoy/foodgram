@@ -3,8 +3,12 @@ import random
 from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.db import models
-from foodgram_backend.settings import (CHARACTERS, MINIMUM_COOKING_TIME_IN_MIN,
-                                       TOKEN_LENGTH)
+
+from foodgram_backend.settings import (
+    CHARACTERS_FOR_SHORT_URL,
+    MINIMUM_COOKING_TIME_IN_MIN,
+    SHORT_URL_LENGTH
+)
 
 User = get_user_model()
 
@@ -37,7 +41,8 @@ class Recipe(models.Model):
     name = models.CharField('Название', max_length=256)
     text = models.TextField('Описание')
     cooking_time = models.IntegerField(
-        'Время приготовления (в минутах)', validators=[
+        'Время приготовления (в минутах)',
+        validators=[
             MinValueValidator(MINIMUM_COOKING_TIME_IN_MIN)])
     tags = models.ManyToManyField(
         Tag, verbose_name='Теги', through='TagsReciep')
@@ -68,8 +73,8 @@ class Recipe(models.Model):
             while True:
                 self.short_url = ''.join(
                     random.choices(
-                        CHARACTERS,
-                        k=TOKEN_LENGTH
+                        CHARACTERS_FOR_SHORT_URL,
+                        k=SHORT_URL_LENGTH
                     )
                 )
                 if not Recipe.objects.filter(
@@ -80,7 +85,8 @@ class Recipe(models.Model):
 
 
 class TagsReciep(models.Model):
-    tag = models.ForeignKey(Tag, on_delete=models.CASCADE, verbose_name='Тег')
+    tag = models.ForeignKey(
+        Tag, on_delete=models.CASCADE, verbose_name='Тег')
     recipe = models.ForeignKey(
         Recipe, on_delete=models.CASCADE, verbose_name='Рецепт')
 

@@ -1,14 +1,18 @@
 import base64
 import os
 
-from django.core.files.base import ContentFile
-from django.shortcuts import get_object_or_404
 from dotenv import load_dotenv
 from rest_framework import serializers
-from users.serializers import UserSerializer
 
-from .models import (Favourites, Ingredient, IngredientsRecipe, Recipe,
-                     ShoppingList, Tag, TagsReciep)
+from django.core.files.base import ContentFile
+from django.shortcuts import get_object_or_404
+
+
+from users.serializers import UserSerializer
+from .models import (
+    Favourites, Ingredient, IngredientsRecipe, Recipe,
+    ShoppingList, Tag, TagsReciep
+)
 
 load_dotenv(override=True)
 
@@ -100,13 +104,13 @@ class RecipeSerializer(serializers.ModelSerializer):
                 amount=ingredient.get('amount'),
                 recipe=recipe
             )
-
         return recipe
 
     def update(self, instance, validated_data):
         if instance.author != self.context['request'].user:
             raise serializers.ValidationError(
                 'Редактировать можно только свои рецепты.')
+
         instance.image = validated_data.get('image', instance.image)
         instance.name = validated_data.get('name', instance.name)
         instance.text = validated_data.get(
@@ -131,7 +135,6 @@ class RecipeSerializer(serializers.ModelSerializer):
                 recipe=self.instance,
                 defaults={'amount': ingredient.get('amount')})
             ingredient_ids.append(ingredient_instance)
-
         instance.ingredients.set(ingredient_ids)
         instance.save()
         return instance
@@ -190,7 +193,10 @@ class FavoriteSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         recipe = get_object_or_404(
-            Recipe, id=self.context['view'].kwargs.get('recipe_id'))
+            Recipe,
+            id=self.context['view'].kwargs.get('recipe_id')
+        )
+
         if Favourites.objects.filter(
                 user=self.context.get('request').user,
                 recipe=recipe).exists():
@@ -205,7 +211,10 @@ class ShoppingListSerializer(FavoriteSerializer):
 
     def validate(self, data):
         recipe = get_object_or_404(
-            Recipe, id=self.context['view'].kwargs.get('recipe_id'))
+            Recipe,
+            id=self.context['view'].kwargs.get('recipe_id')
+        )
+
         if ShoppingList.objects.filter(
                 user=self.context.get('request').user,
                 recipe=recipe).exists():

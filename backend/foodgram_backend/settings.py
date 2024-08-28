@@ -142,8 +142,8 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.AnonRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'user': '1000/day',
-        'anon': '100/day',
+        'user': '5000/day',
+        'anon': '3000/day',
     },
     'DEFAULT_PAGINATION_CLASS': 'users.pagination.CustomPagination',
     'PAGE_SIZE': 6,
@@ -164,5 +164,5 @@ DJOSER = {
 
 
 MINIMUM_COOKING_TIME_IN_MIN = 1
-CHARACTERS = 'ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz234567890'
-TOKEN_LENGTH = 3
+CHARACTERS_FOR_SHORT_URL = 'ABCDEFGHJKLMNOPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz234567890'
+SHORT_URL_LENGTH = 3
