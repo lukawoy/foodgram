@@ -2,11 +2,11 @@ import base64
 import os
 
 from dotenv import load_dotenv
+
 from rest_framework import serializers
 
 from django.core.files.base import ContentFile
 from django.shortcuts import get_object_or_404
-
 
 from users.serializers import UserSerializer
 from .models import (

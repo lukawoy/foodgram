@@ -9,7 +9,6 @@ from django.shortcuts import get_object_or_404
 from recipes.models import Recipe
 from .models import Follow
 
-
 User = get_user_model()
 
 
