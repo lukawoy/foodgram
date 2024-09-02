@@ -1,8 +1,13 @@
 from django.contrib import admin
 
 from .models import (
-    Favourites, Ingredient, IngredientsRecipe, Recipe,
-    ShoppingList, Tag, TagsReciep
+    Favourites,
+    Ingredient,
+    IngredientsRecipe,
+    Recipe,
+    ShoppingList,
+    Tag,
+    TagsReciep,
 )
 
 
@@ -17,34 +22,34 @@ class IngredientInline(admin.TabularInline):
 
 
 class RecipeAdmin(admin.ModelAdmin):
-    inlines = (
-        TagInline, IngredientInline
+    inlines = (TagInline, IngredientInline)
+
+    readonly_fields = ["short_url", "count_favorite", "pub_date"]
+    list_display = ("name", "author")
+    list_filter = ("tags",)
+    empty_value_display = "Не заполнено"
+    search_fields = ["name", "author__username"]
+
+    @admin.display(
+        description="У пользователей в избранном",
     )
-
-    readonly_fields = ['short_url', 'count_favorite', 'pub_date']
-    list_display = ('name', 'author')
-    list_filter = ('tags', )
-    empty_value_display = 'Не заполнено'
-    search_fields = ['name', 'author__username']
-
-    @admin.display(description="У пользователей в избранном", )
     def count_favorite(self, obj):
         return Favourites.objects.filter(recipe_id=obj.id).count()
 
 
 class IngredientAdmin(admin.ModelAdmin):
-    list_display = ('name', 'measurement_unit')
-    search_fields = ['name']
+    list_display = ("name", "measurement_unit")
+    search_fields = ["name"]
 
 
 class TagAdmin(admin.ModelAdmin):
-    list_display = ('name', 'slug')
-    search_fields = ['name', 'slug']
+    list_display = ("name", "slug")
+    search_fields = ["name", "slug"]
 
 
 class FavouritesAdmin(admin.ModelAdmin):
-    list_display = ('recipe', 'user')
-    search_fields = ['recipe__name', 'user__username']
+    list_display = ("recipe", "user")
+    search_fields = ["recipe__name", "user__username"]
 
 
 admin.site.register(Tag, TagAdmin)

@@ -23,11 +23,11 @@ User = get_user_model()
 
 class FollowViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = FollowSerializer
-    permission_classes = (IsAuthenticated, )
+    permission_classes = (IsAuthenticated,)
     pagination_class = CustomPagination
-    filter_backends = (filters.SearchFilter, )
-    search_fields = ('=following__username', )
-    lookup_value_regex = ''
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ("=following__username",)
+    lookup_value_regex = ""
 
     def get_queryset(self):
         follows_list = []
@@ -44,49 +44,51 @@ class FollowViewSet(viewsets.ReadOnlyModelViewSet):
 
 class SubscribeViewSet(viewsets.ModelViewSet):
     serializer_class = FollowSerializer
-    permission_classes = (IsAuthenticated, )
-    http_method_names = ['post', 'delete']
+    permission_classes = (IsAuthenticated,)
+    http_method_names = ["post", "delete"]
 
     def delete(self, request, user_id):
         get_object_or_404(User, id=user_id)
         if Follow.objects.filter(
-                following_id=user_id,
-                user_id=request.user.id).exists():
+            following_id=user_id, user_id=request.user.id
+        ).exists():
             Follow.objects.get(
-                following_id=user_id,
-                user_id=request.user.id).delete()
+                following_id=user_id, user_id=request.user.id).delete()
             return Response(status=HTTPStatus.NO_CONTENT)
         return Response(
-            {'errors': 'Вы уже не подписаны.'}, status=HTTPStatus.BAD_REQUEST
+            {"errors": "Вы уже не подписаны."}, status=HTTPStatus.BAD_REQUEST
         )
 
 
 class UsersMeViewSet(UserViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (AllowAny, )
+    permission_classes = (AllowAny,)
 
-    @action(detail=False, methods=['put', 'delete'],
-            serializer_class=AvatarSerializer,
-            permission_classes=(IsAuthenticated, ),
-            url_path='me/avatar')
+    @action(
+        detail=False,
+        methods=["put", "delete"],
+        serializer_class=AvatarSerializer,
+        permission_classes=(IsAuthenticated,),
+        url_path="me/avatar",
+    )
     def avatar(self, request):
-        if request.method == 'PUT':
-            serializer = self.serializer_class(request.user,
-                                               data=request.data)
+        if request.method == "PUT":
+            serializer = self.serializer_class(request.user, data=request.data)
             serializer.is_valid(raise_exception=True)
             serializer.save()
             response = (
                 f'https://{os.getenv("DOMAIN")}'
                 f'{serializer.data.get("avatar")}'
             )
-            return Response({'avatar': response})
+            return Response({"avatar": response})
 
         User.objects.filter(username=request.user).update(avatar=None)
         return Response(status=HTTPStatus.NO_CONTENT)
 
-    @action(["get"], detail=False, permission_classes=(IsAuthenticated, ))
+    @action(["get"], detail=False, permission_classes=(IsAuthenticated,))
     def me(self, request, *args, **kwargs):
         serializer = self.serializer_class(
-            request.user, context={'request': request})
+            request.user, context={"request": request}
+        )
         return Response(serializer.data)
