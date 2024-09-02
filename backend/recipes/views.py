@@ -21,7 +21,7 @@ from .serializers import (
     IngredientSerializer,
     RecipeSerializer,
     ShoppingListSerializer,
-    TagSerializer,
+    TagSerializer
 )
 from django.db.models import Sum
 
