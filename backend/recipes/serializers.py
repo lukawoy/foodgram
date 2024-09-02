@@ -202,7 +202,8 @@ class RecipeSerializer(serializers.ModelSerializer):
                 )
             ingredient_id_list.append(ingredient["id"])
 
-            if not Ingredient.objects.filter(id=ingredient.get("id")).exists():
+            if not Ingredient.objects.filter(
+                    id=ingredient.get("id")).exists():
                 raise serializers.ValidationError(
                     "Указанного ингредиента не существует."
                 )

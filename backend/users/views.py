@@ -86,7 +86,7 @@ class UsersMeViewSet(UserViewSet):
         User.objects.filter(username=request.user).update(avatar=None)
         return Response(status=HTTPStatus.NO_CONTENT)
 
-    @action(["get"], detail=False, permission_classes=(IsAuthenticated,))
+    @action(["get"], detail=False, permission_classes=(IsAuthenticated, ))
     def me(self, request, *args, **kwargs):
         serializer = self.serializer_class(
             request.user, context={"request": request}
