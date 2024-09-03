@@ -12,8 +12,7 @@ class User(AbstractUser):
         validators=[validators.RegexValidator(r"^[\w.@+-]+\Z")],
     )
     email = models.EmailField(
-        "Адрес электронной почты", unique=True, max_length=254
-    )
+        "Адрес электронной почты", unique=True, max_length=254)
     first_name = models.CharField("Имя", max_length=150)
     last_name = models.CharField("Фамилия", max_length=150)
     avatar = models.ImageField(

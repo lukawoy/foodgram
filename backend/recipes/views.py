@@ -21,7 +21,7 @@ from .serializers import (
     IngredientSerializer,
     RecipeSerializer,
     ShoppingListSerializer,
-    TagSerializer
+    TagSerializer,
 )
 from django.db.models import Sum
 
@@ -31,7 +31,7 @@ load_dotenv(override=True)
 class TagViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Tag.objects.all()
     serializer_class = TagSerializer
-    permission_classes = (AllowAny, )
+    permission_classes = (AllowAny,)
     pagination_class = None
 
 
@@ -89,9 +89,7 @@ class ShoppingListViewSet(FavoriteViewSet):
 
     def delete(self, request, recipe_id):
         recipe = get_object_or_404(Recipe, id=recipe_id)
-        shop_list = recipe.shoppinglist_recipe.filter(
-            user__id=request.user.id
-        )
+        shop_list = recipe.shoppinglist_recipe.filter(user__id=request.user.id)
 
         if shop_list.exists():
             shop_list.delete()
@@ -131,8 +129,7 @@ class DownloadShoppingListViewSet(APIView):
             amount = ingredient["total_amount"]
             measurement_unit = ingredient["ingredient__measurement_unit"]
             writer.writerow(
-                [f"{ingredient_name} - {amount} ({measurement_unit})"]
-            )
+                [f"{ingredient_name} - {amount} ({measurement_unit})"])
 
         return response
 

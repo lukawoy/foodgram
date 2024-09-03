@@ -59,8 +59,7 @@ class Recipe(models.Model):
         Ingredient, verbose_name="Ингредиенты", through="IngredientsRecipe"
     )
     image = models.ImageField(
-        "Вид блюда", upload_to="recipes/images/", default=None
-    )
+        "Вид блюда", upload_to="recipes/images/", default=None)
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
@@ -71,8 +70,7 @@ class Recipe(models.Model):
         "Короткая ссылка", max_length=3, unique=True, db_index=True
     )
     pub_date = models.DateTimeField(
-        "Дата добавления", auto_now_add=True, db_index=True
-    )
+        "Дата добавления", auto_now_add=True, db_index=True)
 
     class Meta:
         verbose_name = "рецепт"
@@ -86,13 +84,11 @@ class Recipe(models.Model):
         if not self.short_url:
             while True:
                 self.short_url = "".join(
-                    random.choices(
-                        CHARACTERS_FOR_SHORT_URL, k=SHORT_URL_LENGTH
-                    )
+                    random.choices(CHARACTERS_FOR_SHORT_URL,
+                                   k=SHORT_URL_LENGTH)
                 )
                 if not Recipe.objects.filter(
-                    short_url=self.short_url
-                ).exists():
+                        short_url=self.short_url).exists():
                     break
         super().save(*args, **kwargs)
 
@@ -100,8 +96,7 @@ class Recipe(models.Model):
 class TagsReciep(models.Model):
     tag = models.ForeignKey(Tag, on_delete=models.CASCADE, verbose_name="Тег")
     recipe = models.ForeignKey(
-        Recipe, on_delete=models.CASCADE, verbose_name="Рецепт"
-    )
+        Recipe, on_delete=models.CASCADE, verbose_name="Рецепт")
 
     class Meta:
         verbose_name = "связь тег-рецепт"

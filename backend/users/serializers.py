@@ -51,7 +51,6 @@ class UserSerializer(serializers.ModelSerializer):
         )
 
     def get_is_subscribed(self, obj) -> bool:
-
         return obj.followings_user.filter(
             following_id=self.context["request"].user.id
         ).exists()
@@ -133,19 +132,18 @@ class FollowSerializer(UserSerializer):
                     "Параметр recipes_limit должен быть "
                     "целым положительным числом."
                 )
-            return serialize_recipes[:int(recipes_limit)]
+            return serialize_recipes[: int(recipes_limit)]
 
         return serialize_recipes
 
-    def create(self, validated_data):
-        following_id = validated_data.get("following_id")
-        Follow.objects.create(
-            following_id=following_id, user_id=validated_data.get("user_id")
-        )
+    def save(self, **kwargs):
+        user_id = self.context["request"].user.id
+        following_id = self.context["view"].kwargs.get("user_id")
+        Follow.objects.create(following_id=following_id, user_id=user_id)
         return User.objects.get(id=following_id)
 
     def validate(self, data):
-        user_id = self.context.get("request").user.id
+        user_id = self.context["request"].user.id
         following_id = int(self.context["view"].kwargs.get("user_id"))
         following_user = get_object_or_404(User, id=following_id)
 
@@ -155,4 +153,4 @@ class FollowSerializer(UserSerializer):
             raise serializers.ValidationError(
                 "Подписка уже существует или невозможна."
             )
-        return {"following_id": following_id, "user_id": user_id}
+        return following_user

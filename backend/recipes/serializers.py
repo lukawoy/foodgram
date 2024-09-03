@@ -67,8 +67,7 @@ class RecipeSerializer(serializers.ModelSerializer):
     tags = TagSerializer(many=True, read_only=True)
     author = UserSerializer(many=False, read_only=True)
     ingredients = IngredredientsRecipeSerializer(
-        many=True, source="ingredients_recipe"
-    )
+        many=True, source="ingredients_recipe")
     is_favorited = serializers.SerializerMethodField()
     is_in_shopping_cart = serializers.SerializerMethodField()
     image = Base64ImageField()
@@ -102,8 +101,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             user__id=self.context["request"].user.id
         ).exists()
 
-    def _update_or_create_ingredients(
-            self, ingredients, recipe, method):
+    def _update_or_create_ingredients(self, ingredients, recipe, method):
         if method == "update":
             IngredientsRecipe.objects.filter(recipe=recipe).delete()
         ingredients_list = []
@@ -111,8 +109,7 @@ class RecipeSerializer(serializers.ModelSerializer):
             ingredients_list.append(
                 IngredientsRecipe(
                     ingredient=get_object_or_404(
-                        Ingredient, id=ingredient.get("id")
-                    ),
+                        Ingredient, id=ingredient.get("id")),
                     amount=ingredient.get("amount"),
                     recipe=recipe,
                 )
@@ -175,16 +172,17 @@ class RecipeSerializer(serializers.ModelSerializer):
                 "Поле tags является обязательным и не должно быть пустым."
             )
 
+        unique_tags = set()
         for tag in tags:
-            if tags.count(tag) > 1:
+            if tag in unique_tags:
                 raise serializers.ValidationError(
                     "В поле tags не должно быть повторяющихся тегов."
                 )
+            unique_tags.add(tag)
 
             if not Tag.objects.filter(id=tag).exists():
                 raise serializers.ValidationError(
-                    "Указанного тега не существует."
-                )
+                    "Указанного тега не существует.")
 
         ingredients = self.initial_data.get("ingredients")
         if not ingredients:
@@ -193,17 +191,16 @@ class RecipeSerializer(serializers.ModelSerializer):
                 "и не должно быть пустым."
             )
 
-        ingredient_id_list = []
+        unique_ingredients_ids = set()
         for ingredient in ingredients:
-            if ingredient["id"] in ingredient_id_list:
+            if ingredient["id"] in unique_ingredients_ids:
                 raise serializers.ValidationError(
                     "В поле ingredients не должно быть "
                     "повторяющихся ингредиентов."
                 )
-            ingredient_id_list.append(ingredient["id"])
+            unique_ingredients_ids.add(ingredient["id"])
 
-            if not Ingredient.objects.filter(
-                    id=ingredient.get("id")).exists():
+            if not Ingredient.objects.filter(id=ingredient.get("id")).exists():
                 raise serializers.ValidationError(
                     "Указанного ингредиента не существует."
                 )
@@ -240,8 +237,7 @@ class FavoriteSerializer(serializers.ModelSerializer):
             user__id=self.context["request"].user.id
         ).exists():
             raise serializers.ValidationError(
-                "Данный рецепт уже добавлен в избранное!"
-            )
+                "Данный рецепт уже добавлен в избранное!")
         return data
 
 

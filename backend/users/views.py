@@ -7,12 +7,10 @@ from rest_framework import filters, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
-
 from django.contrib.auth import get_user_model
 from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet
 
-from .models import Follow
 from .pagination import CustomPagination
 from .serializers import AvatarSerializer, FollowSerializer, UserSerializer
 
@@ -27,19 +25,9 @@ class FollowViewSet(viewsets.ReadOnlyModelViewSet):
     pagination_class = CustomPagination
     filter_backends = (filters.SearchFilter,)
     search_fields = ("=following__username",)
-    lookup_value_regex = ""
 
     def get_queryset(self):
-        follows_list = []
-
-        for item in Follow.objects.filter(user_id=self.request.user.id):
-            follows_list.append(User.objects.filter(id=item.following_id))
-
-        if not follows_list:
-            return Follow.objects.none()
-        follows_qs = follows_list[0].union(*follows_list[1:])
-
-        return follows_qs
+        return User.objects.filter(followings__user=self.request.user)
 
 
 class SubscribeViewSet(viewsets.ModelViewSet):
@@ -47,14 +35,17 @@ class SubscribeViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticated,)
     http_method_names = ["post", "delete"]
 
+    def perform_create(self, serializer):
+        serializer.save()
+
     def delete(self, request, user_id):
-        get_object_or_404(User, id=user_id)
-        if Follow.objects.filter(
-            following_id=user_id, user_id=request.user.id
-        ).exists():
-            Follow.objects.get(
-                following_id=user_id, user_id=request.user.id).delete()
+        following_user = get_object_or_404(User, id=user_id)
+        follow = following_user.followings.filter(user_id=request.user.id)
+        print(follow)
+        if follow.exists():
+            follow.delete()
             return Response(status=HTTPStatus.NO_CONTENT)
+
         return Response(
             {"errors": "Вы уже не подписаны."}, status=HTTPStatus.BAD_REQUEST
         )
@@ -86,7 +77,7 @@ class UsersMeViewSet(UserViewSet):
         User.objects.filter(username=request.user).update(avatar=None)
         return Response(status=HTTPStatus.NO_CONTENT)
 
-    @action(["get"], detail=False, permission_classes=(IsAuthenticated, ))
+    @action(["get"], detail=False, permission_classes=(IsAuthenticated,))
     def me(self, request, *args, **kwargs):
         serializer = self.serializer_class(
             request.user, context={"request": request}
