@@ -41,7 +41,6 @@ class SubscribeViewSet(viewsets.ModelViewSet):
     def delete(self, request, user_id):
         following_user = get_object_or_404(User, id=user_id)
         follow = following_user.followings.filter(user_id=request.user.id)
-        print(follow)
         if follow.exists():
             follow.delete()
             return Response(status=HTTPStatus.NO_CONTENT)

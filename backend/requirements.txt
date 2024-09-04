@@ -8,3 +8,4 @@ Pillow==9.5.0
 PyYAML==6.0
 python-dotenv==1.0.1
 django-filter==23.1
+gunicorn==21.2.0
